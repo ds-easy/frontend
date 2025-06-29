@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import { Header } from "./components/Header"
 import { HomePage } from "./pages/HomePage"
 import { CreateExamPage } from "./pages/CreateExamPage"
+import { AboutPage } from "./pages/AboutPage"
+import { HowToPage } from "./pages/HowToPage"
 import "./App.css"
 
 function App() {
@@ -12,6 +14,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/create-exam" element={<CreateExamPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/how-to" element={<HowToPage />} />
         </Routes>
       </div>
     </Router>

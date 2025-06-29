@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 import { FileText, Upload } from "lucide-react"
 import { Button } from "../components/ui/button"
+import { Card, CardContent } from "../components/ui/card"
 
 export function HomePage() {
   return (
@@ -32,6 +33,37 @@ export function HomePage() {
             <Upload className="w-5 h-5 mr-2" />
             Upload Exercise
           </Button>
+        </div>
+
+        {/* Feature Cards */}
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <Card className="p-6 bg-white border border-gray-200 hover:shadow-md transition-shadow">
+            <CardContent className="p-0">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Customizable Exams</h3>
+              <p className="text-gray-600">Create tailored exams with our extensive exercise database</p>
+            </CardContent>
+          </Card>
+
+          <Card className="p-6 bg-white border border-gray-200 hover:shadow-md transition-shadow">
+            <CardContent className="p-0">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Community Driven</h3>
+              <p className="text-gray-600">Contribute your own exercises to help others learn</p>
+            </CardContent>
+          </Card>
+
+          <Card className="p-6 bg-white border border-gray-200 hover:shadow-md transition-shadow">
+            <CardContent className="p-0">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Easy to Use</h3>
+              <p className="text-gray-600">Simple interface for creating and sharing exercises</p>
+            </CardContent>
+          </Card>
+
+          <Card className="p-6 bg-white border border-gray-200 hover:shadow-md transition-shadow">
+            <CardContent className="p-0">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Professional Quality</h3>
+              <p className="text-gray-600">Generate high-quality PDF exams ready for distribution</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </main>
