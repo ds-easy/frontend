@@ -194,7 +194,7 @@ export function UploadExercisePage() {
               </>
             ) : (
               <>
-                <Upload className="w-4 h-4 mr-2" />
+                <div className="w-4 h-4 mr-2" />
                 Upload Exercise
               </>
             )}
