@@ -8,6 +8,7 @@ import { Label } from "../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { FileText, Loader2, Download, X,Plus, Trash2, Settings, Globe } from "lucide-react"
 import { useExamStore } from "../store/examStore"
+import { useLessonStore } from "../store/lessonStore"
 
 type LimitMode = "global" | "individual"
 
@@ -18,7 +19,8 @@ interface SelectedLesson {
 }
 
 export function CreateExamPage() {
-  const { lessons, isLoading, error, pdfUrl, fetchLessons, submitExam, clearPdf } = useExamStore()
+  const {isLoading, error, pdfUrl, submitExam, clearPdf } = useExamStore()
+  const {lessons, fetchLessons} = useLessonStore()
 
   const [limitMode, setLimitMode] = useState<LimitMode>("global")
   const [selectedLessons, setSelectedLessons] = useState<SelectedLesson[]>([])
