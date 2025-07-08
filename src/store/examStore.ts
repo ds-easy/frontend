@@ -11,9 +11,14 @@ interface Lesson {
   lesson_name: string
 }
 
-interface ExamFormData {
+interface LessonRequest {
   lesson_name: string
-  limit: number
+  limit?: number
+}
+
+interface ExamFormData {
+  lessons: LessonRequest[]
+  global_limit?: number
   date_of_passing: string
   exam_number: number
   professor_id: number
@@ -73,6 +78,8 @@ export const useExamStore = create<ExamStore>((set, get) => ({
         template_name: "ELDS2", // Hardcoded
       }
 
+      console.log("Submitting exam data:", examData)
+
       const response = await fetch("http://localhost:8080/exams", {
         method: "POST",
         headers: {
@@ -83,7 +90,17 @@ export const useExamStore = create<ExamStore>((set, get) => ({
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to create exam: ${response.status} ${response.statusText}`)
+        // Try to get error message from response
+        let errorMessage = `Failed to create exam: ${response.status} ${response.statusText}`
+        try {
+          const errorData = await response.json()
+          if (errorData.error) {
+            errorMessage = errorData.error
+          }
+        } catch (e) {
+          // If we can't parse JSON, use the default error message
+        }
+        throw new Error(errorMessage)
       }
 
       // Handle PDF response

@@ -6,11 +6,24 @@ import { Card, CardContent } from "../components/ui/card"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { FileText, Loader2, Download, X } from "lucide-react"
+import { FileText, Loader2, Download, X,Plus, Trash2, Settings, Globe } from "lucide-react"
 import { useExamStore } from "../store/examStore"
+
+type LimitMode = "global" | "individual"
+
+interface SelectedLesson {
+  id: string
+  lesson_name: string
+  limit: number
+}
 
 export function CreateExamPage() {
   const { lessons, isLoading, error, pdfUrl, fetchLessons, submitExam, clearPdf } = useExamStore()
+
+  const [limitMode, setLimitMode] = useState<LimitMode>("global")
+  const [selectedLessons, setSelectedLessons] = useState<SelectedLesson[]>([])
+  const [globalLimit, setGlobalLimit] = useState<number>(4)
+
 
   const [formData, setFormData] = useState({
     lesson_name: "",
@@ -40,10 +53,44 @@ export function CreateExamPage() {
     }))
   }
 
+  const addLesson = () => {
+    if (lessons.length === 0) return
+    
+    const newId = Date.now().toString()
+    const newLesson: SelectedLesson = {
+      id: newId,
+      lesson_name: lessons[0].lesson_name,
+      limit: 2
+    }
+    
+    setSelectedLessons([...selectedLessons, newLesson])
+  }
+
+  const removeLesson = (id: string) => {
+    setSelectedLessons(selectedLessons.filter(lesson => lesson.id !== id))
+  }
+
+  const updateSelectedLesson = (id: string, field: keyof SelectedLesson, value: string | number) => {
+    setSelectedLessons(selectedLessons.map(lesson => 
+      lesson.id === id ? { ...lesson, [field]: value } : lesson
+    ))
+  }
+
+
   const handleGenerateExam = async () => {
     // Validate form
-    if (!formData.lesson_name || !formData.limit || !formData.exam_number || !formData.date_of_passing) {
-      alert("Please fill in all fields")
+    if (!formData.exam_number || !formData.date_of_passing) {
+      alert("Please fill in exam number and date")
+      return
+    }
+
+    if (selectedLessons.length === 0) {
+      alert("Please select at least one lesson")
+      return
+    }
+
+    if (limitMode === "global" && globalLimit < selectedLessons.length) {
+      alert(`Global limit (${globalLimit}) cannot be less than the number of lessons (${selectedLessons.length})`)
       return
     }
 
@@ -52,12 +99,24 @@ export function CreateExamPage() {
       clearPdf()
     }
 
-    // Prepare data for submission
-    const examData = {
-      lesson_name: formData.lesson_name,
-      limit: Number.parseInt(formData.limit),
+    // Prepare data for submission based on limit mode
+    let examData: any = {
       date_of_passing: new Date(formData.date_of_passing).toISOString(),
       exam_number: Number.parseInt(formData.exam_number),
+    }
+
+    if (limitMode === "global") {
+      // Global limit mode
+      examData.lessons = selectedLessons.map(lesson => ({
+        lesson_name: lesson.lesson_name
+      }))
+      examData.global_limit = globalLimit
+    } else {
+      // Individual limits mode
+      examData.lessons = selectedLessons.map(lesson => ({
+        lesson_name: lesson.lesson_name,
+        limit: lesson.limit
+      }))
     }
 
     try {
@@ -65,6 +124,14 @@ export function CreateExamPage() {
     } catch (error) {
       console.error("Error creating exam:", error)
     }
+  }
+
+  const getAvailableLessons = (currentLessonId: string) => {
+    const usedLessons = selectedLessons
+      .filter(lesson => lesson.id !== currentLessonId)
+      .map(lesson => lesson.lesson_name)
+    
+    return lessons.filter(lesson => !usedLessons.includes(lesson.lesson_name))
   }
 
   const handleDownloadPdf = () => {
@@ -100,42 +167,120 @@ export function CreateExamPage() {
         {/* Form Section */}
         <Card className="p-6">
           <CardContent className="space-y-6 p-0">
-            {/* Lesson Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="lesson" className="text-sm font-medium text-gray-700">
-                Lesson
-              </Label>
-              <Select
-                onValueChange={(value) => handleInputChange("lesson_name", value)}
-                value={formData.lesson_name}
-                disabled={isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={isLoading ? "Loading lessons..." : "Select a lesson"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {lessons.map((lesson) => (
-                    <SelectItem key={lesson.id} value={lesson.lesson_name}>
-                      {lesson.lesson_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Limit Mode Tabs */}
+            <div className="space-y-4">
+              <Label className="text-sm font-medium text-gray-700">Exercise Limit Mode</Label>
+              <div className="flex space-x-2">
+                <Button
+                  variant={limitMode === "global" ? "default" : "outline"}
+                  onClick={() => setLimitMode("global")}
+                  className="flex items-center space-x-2"
+                >
+                  <Globe className="w-4 h-4" />
+                  <span>Global Limit</span>
+                </Button>
+                <Button
+                  variant={limitMode === "individual" ? "default" : "outline"}
+                  onClick={() => setLimitMode("individual")}
+                  className="flex items-center space-x-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Individual Limits</span>
+                </Button>
+              </div>
             </div>
 
-            {/* Number of Exercises (Limit) */}
-            <div className="space-y-2">
-              <Label htmlFor="limit" className="text-sm font-medium text-gray-700">
-                Number of exercises
-              </Label>
-              <Input
-                id="limit"
-                type="number"
-                placeholder="0"
-                value={formData.limit}
-                onChange={(e) => handleInputChange("limit", e.target.value)}
-                className="w-full"
-              />
+            {/* Global Limit Input (only shown in global mode) */}
+            {limitMode === "global" && (
+              <div className="space-y-2">
+                <Label htmlFor="globalLimit" className="text-sm font-medium text-gray-700">
+                  Total number of exercises
+                </Label>
+                <Input
+                  id="globalLimit"
+                  type="number"
+                  placeholder="4"
+                  value={globalLimit}
+                  onChange={(e) => setGlobalLimit(Number.parseInt(e.target.value) || 0)}
+                  className="w-full"
+                  min="1"
+                />
+                <p className="text-xs text-gray-500">
+                  This will be distributed evenly across all selected lessons
+                </p>
+              </div>
+            )}
+
+            {/* Selected Lessons */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-medium text-gray-700">
+                  Selected Lessons
+                </Label>
+                <Button
+                  onClick={addLesson}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center space-x-2"
+                  disabled={isLoading || selectedLessons.length >= lessons.length}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Lesson</span>
+                </Button>
+              </div>
+
+              {selectedLessons.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p>No lessons selected</p>
+                  <p className="text-sm">Click "Add Lesson" to get started</p>
+                </div>
+              )}
+
+              {selectedLessons.map((selectedLesson) => (
+                <div key={selectedLesson.id} className="flex items-center space-x-2 p-3 border rounded-lg">
+                  <div className="flex-1">
+                    <Select
+                      value={selectedLesson.lesson_name}
+                      onValueChange={(value) => updateSelectedLesson(selectedLesson.id, "lesson_name", value)}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lesson" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailableLessons(selectedLesson.id).map((lesson) => (
+                          <SelectItem key={lesson.id} value={lesson.lesson_name}>
+                            {lesson.lesson_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {limitMode === "individual" && (
+                    <div className="w-24">
+                      <Input
+                        type="number"
+                        placeholder="Limit"
+                        value={selectedLesson.limit}
+                        onChange={(e) => updateSelectedLesson(selectedLesson.id, "limit", Number.parseInt(e.target.value) || 0)}
+                        className="w-full"
+                        min="1"
+                      />
+                    </div>
+                  )}
+                  
+                  <Button
+                    onClick={() => removeLesson(selectedLesson.id)}
+                    size="sm"
+                    variant="outline"
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
 
             {/* Exam Number */}
@@ -182,6 +327,30 @@ export function CreateExamPage() {
                 "Generate Exam"
               )}
             </Button>
+
+            {/* Summary */}
+            {selectedLessons.length > 0 && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Summary</h4>
+                <div className="text-sm text-gray-600">
+                  <p>Lessons: {selectedLessons.length}</p>
+                  <p>
+                    Total exercises: {limitMode === "global" 
+                      ? globalLimit 
+                      : selectedLessons.reduce((sum, lesson) => sum + lesson.limit, 0)
+                    }
+                  </p>
+                  {limitMode === "global" && selectedLessons.length > 0 && (
+                    <p className="text-xs mt-1">
+                      Distribution: ~{Math.floor(globalLimit / selectedLessons.length)} per lesson
+                      {globalLimit % selectedLessons.length > 0 && 
+                        ` (+${globalLimit % selectedLessons.length} extra)`
+                      }
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
